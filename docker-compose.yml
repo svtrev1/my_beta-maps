@@ -1,0 +1,61 @@
+services:
+  frontend:
+    build: ./maps.frontend
+    image: maps-frontend
+    container_name: maps-frontend
+    restart: unless-stopped
+    command: serve -s dist -l 3000
+    networks:
+      - maps-network
+
+  api:
+    build: ./maps.backend
+    image: maps-api
+    container_name: maps-api
+    restart: unless-stopped
+    command: npm run start
+    volumes:
+      - maps_api:/app/maps.backend.uploads
+    networks:
+      - maps-network
+
+  geoserver:
+    image: docker.osgeo.org/geoserver:2.26.2
+    container_name: maps-geoserver
+    restart: unless-stopped
+    volumes:
+      - maps_geoserver:/opt/geoserver_data/
+    environment:
+      - INSTALL_EXTENSIONS=true
+      - GEOSERVER_CSRF_DISABLED=true
+      - GEOSERVER_CSRF_WHITELIST=betamaps.admsurgut.ru
+      - CORS_ENABLED=true
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,HEAD,OPTIONS
+      - CORS_ALLOWED_HEADERS=*
+    networks:
+      - maps-network
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: maps-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf
+      - ./nginx/ssl:/etc/ssl
+    depends_on:
+      - frontend
+      - api
+    networks:
+      - maps-network
+
+volumes:
+  maps_api:
+  maps_geoserver:
+  
+networks:
+  maps-network:
+    driver: bridge

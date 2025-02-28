@@ -12,14 +12,14 @@ server {
   }
 
   location /api {
-    proxy_pass http://api:9000;
+    proxy_pass http://maps-backend:9000;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-Host $host;
     #rewrite ^/api/(.*) /$1 break;
   }
 
   location /swagger {
-    proxy_pass http://api:9000;
+    proxy_pass http://maps-backend:9000;
     #rewrite ^/swagger/(.*) /$1 break;
   }
 
@@ -36,12 +36,12 @@ server {
   }
 
   location /uploads/ {
-    proxy_pass http://api:9000;
+    proxy_pass http://maps-backend:9000;
     rewrite ^/uploads/(.*) /uploads/$1 break;
   }
 
   location /app/maps.backend.uploads {
-    proxy_pass http://api:9000;
+    proxy_pass http://maps-backend:9000;
     rewrite ^/app/maps.backend.uploads/(.*) /uploads/$1 break;
   }
 

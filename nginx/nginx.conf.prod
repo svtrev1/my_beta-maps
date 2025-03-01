@@ -24,7 +24,7 @@ server {
   }
 
   location /geoserver {
-    proxy_pass http://geoserver:8080/geoserver;
+    proxy_pass http://maps-geoserver:8080/geoserver;
     proxy_pass_header Set-Cookie;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Host $host;

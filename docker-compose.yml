@@ -21,7 +21,7 @@ services:
       - APP_DEBUG=true
       - APP_KEY=your_app_key_here
       - DB_CONNECTION=pgsql
-      - DB_HOST=betamaps_db
+      - DB_HOST=postgis_db
       - DB_PORT=5432
       - DB_DATABASE=your_db_name
       - DB_USERNAME=your_db_username
@@ -30,6 +30,7 @@ services:
       - geoserver
     networks:
       - maps-network
+      - postgis-network
 
   geoserver:
     image: docker.osgeo.org/geoserver:2.26.2
@@ -47,6 +48,7 @@ services:
       - CORS_ALLOWED_HEADERS=*
     networks:
       - maps-network
+      - postgis-network
 
   nginx:
     image: nginx:stable-alpine
@@ -71,3 +73,6 @@ volumes:
 networks:
   maps-network:
     driver: bridge
+    name: maps-network
+  postgis-network:
+    external: true

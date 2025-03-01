@@ -1,5 +1,50 @@
 <template>
-  <div id="map" style="height: 100%; width: 100%"></div>
+  <div id="map-container">
+    <div id="map" style="height: 100%; width: 100%"></div>
+    <div id="info-panel" :class="{ 'visible': isPanelVisible }">
+      <div class="info-content">
+        <button @click="closePanel" class="close-btn">×</button>
+        <div v-if="selectedFeature" class="info-grid">
+          <template v-if="selectedFeature.get('name')">
+            <div class="info-label">Наименование остановки:</div>
+            <div class="info-value">{{ selectedFeature.get('name') }}</div>
+          </template>
+          <template v-if="selectedFeature.get('numbus')">
+            <div class="info-label">Номера автобусов:</div>
+            <div class="info-value">{{ selectedFeature.get('numbus') }}</div>
+          </template>
+          <template v-if="selectedFeature.get('numtaxi')">
+            <div class="info-label">Номера маршрутных автобусов:</div>
+            <div class="info-value">{{ selectedFeature.get('numtaxi') }}</div>
+          </template>
+          <template v-if="selectedFeature.get('street')">
+            <div class="info-label">Местоположение остановки:</div>
+            <div class="info-value">{{ selectedFeature.get('street') }}</div>
+          </template>
+          <template v-if="selectedFeature.get('financing')">
+            <div class="info-label">Финансирование:</div>
+            <div class="info-value">{{ selectedFeature.get('financing') }}</div>
+          </template>
+          <template v-if="selectedFeature.get('year')">
+            <div class="info-label">Год замены:</div>
+            <div class="info-value">{{ selectedFeature.get('year') }}</div>
+          </template>
+          <template v-if="selectedFeature.get('inform_typ')">
+            <div class="info-label">Тип информации:</div>
+            <div class="info-value">{{ getInformationType(selectedFeature.get('inform_typ')) }}</div>
+          </template>
+          <template v-if="selectedFeature.get('comfort_ty')">
+            <div class="info-label">Тип комфортности:</div>
+            <div class="info-value">{{ getComfortType(selectedFeature.get('comfort_ty')) }}</div>
+          </template>
+          <template v-if="selectedFeature.get('comments')">
+            <div class="info-label">Комментарии:</div>
+            <div class="info-value">{{ selectedFeature.get('comments') }}</div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -16,12 +61,17 @@ import { GeoJSON } from 'ol/format';
 
 export default {
   name: 'MapComponent',
+  data() {
+    return {
+      isPanelVisible: false,
+      selectedFeature: null,
+    };
+  },
   mounted() {
     this.initMap();
   },
   methods: {
     initMap() {
-      // Настроим карту
       const map = new ol.Map({
         target: 'map',
         layers: [
@@ -30,18 +80,16 @@ export default {
           }),
         ],
         view: new ol.View({
-          center: fromLonLat([37.6173, 55.7558]), // Москва, можно заменить на нужные координаты
+          center: fromLonLat([73.42, 61.25]), 
           zoom: 12,
         }),
       });
 
-      // Получаем точки из GeoServer (GeoJSON)
       const vectorSource = new VectorSource({
         format: new GeoJSON(),
         url: 'http://betamaps.admsurgut.ru/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne:busstation_4326&outputFormat=application/json',
-             });
+      });
 
-      // Настроим стиль для точек
       const style = new Style({
         image: new CircleStyle({
           radius: 5,
@@ -53,21 +101,105 @@ export default {
         }),
       });
 
-      // Добавляем слой с точками на карту
       const vectorLayer = new VectorLayer({
         source: vectorSource,
         style: style,
       });
 
       map.addLayer(vectorLayer);
+
+      map.on('click', (event) => {
+        const feature = map.forEachFeatureAtPixel(event.pixel, (feature) => {
+          return feature;
+        });
+
+        if (feature) {
+          this.selectedFeature = feature;
+          this.isPanelVisible = true;
+        }
+      });
+    },
+    closePanel() {
+      this.isPanelVisible = false;
+      this.selectedFeature = null;
+    },
+    getInformationType(type) {
+      switch (type) {
+        case 1:
+          return 'Электронное табло';
+        case 2:
+          return 'Жидкокристаллический экран';
+        default:
+          return 'Нет данных';
+      }
+    },
+    getComfortType(type) {
+      switch (type) {
+        case 1:
+          return 'Теплая умная';
+        case 2:
+          return 'Обычная';
+        default:
+          return 'Нет данных';
+      }
     },
   },
 };
 </script>
 
 <style scoped>
-#map {
-  width: 100%;
+#map-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+#info-panel {
+  position: absolute;
+  top: 0;
+  left: -500px;
+  width: 500px;
   height: 100%;
+  background: white;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: left 0.3s ease-in-out;
+  z-index: 1000;
+  color: black;
+}
+
+#info-panel.visible {
+  left: 0;
+}
+
+.info-content {
+  padding: 20px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.info-label {
+  font-weight: bold;
+  text-align: left;
+  word-break: break-word;
+}
+
+.info-value {
+  text-align: left;
+  word-break: break-word;
 }
 </style>

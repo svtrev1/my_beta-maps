@@ -15,21 +15,17 @@ export default {
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  text-align: center;
-  color: #2c3e50;
-  /* Убираем фиксированные размеры */
-  width: 100%;
+html, body {
   height: 100%;
-  padding: 0;
+  width: 100%;
   margin: 0;
+  padding: 0;
 }
 
-html, body {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+#app {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 </style>

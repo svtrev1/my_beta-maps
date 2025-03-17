@@ -1,10 +1,37 @@
 <template>
   <div id="map-container">
     <div id="map" style="height: 100%; width: 100%"></div>
+    
     <div id="info-panel" :class="{ 'visible': isPanelVisible }">
       <div class="info-content">
         <button @click="closePanel" class="close-btn">×</button>
-        <div v-if="selectedFeature" class="info-grid">
+        <div v-if="mode === 'add'">
+          
+          <p class="add-title">Добавление новой остановки</p>
+          
+          <!-- Шаг 1: Выбор точки -->
+          <p v-if="addStep === 1" class="add-instruction">Кликните на карту, чтобы установить точку!</p>
+          
+          <!-- Шаг 2: Подтверждение точки -->
+          <div v-if="addStep === 2">
+            <p class="add-instruction">Вы указали точку! Подтвердить?</p>
+            <button @click="confirmPoint" class="confirm-btn">Да</button>
+          </div>
+          
+          <!-- Шаг 3: Ввод текста остановки -->
+          <div v-if="addStep === 3">
+            <p class="add-instruction">Впишите текст остановки:</p>
+            <input v-model="newPointText" type="text" class="text-input" placeholder="Название остановки" />
+            <button @click="submitStopText" class="confirm-btn">Done!</button>
+          </div>
+          
+          <!-- Шаг 4: Завершение -->
+          <div v-if="addStep === 4">
+            <p class="add-success">Остановка добавлена!</p>
+            <button @click="exitAddMode" class="confirm-btn">Выйти из режима добавления</button>
+          </div>
+        </div>
+        <div v-else-if="selectedFeature" class="info-grid">
           <template v-if="selectedFeature.get('name')">
             <div class="info-label">Наименование остановки:</div>
             <div class="info-value">{{ selectedFeature.get('name') }}</div>
@@ -55,13 +82,15 @@
 import * as ol from 'ol';
 import 'ol/ol.css';
 import OSM from 'ol/source/OSM';
+import { Feature } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Style } from 'ol/style';
+import { Style, Circle, Fill, Stroke } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import { GeoJSON } from 'ol/format';
 import Icon from 'ol/style/Icon';
+import Point from 'ol/geom/Point';
 
 export default {
   name: 'MapComponent',
@@ -69,6 +98,11 @@ export default {
     return {
       isPanelVisible: false,
       selectedFeature: null,
+      mode: null,
+      addPoint: null,
+      addLayer: null,
+      addStep: 1,
+      newPointText: null,
     };
   },
   mounted() {
@@ -76,7 +110,7 @@ export default {
   },
   methods: {
     initMap() {
-      const map = new ol.Map({
+      this.map = new ol.Map({
         target: 'map',
         layers: [
           new TileLayer({
@@ -106,42 +140,86 @@ export default {
         },
       });
 
+      this.map.addLayer(vectorLayer);
+      
+      this.addLayer = new VectorLayer({
+        source: new VectorSource(),
+        style: new Style({
+          image: new Circle({
+            radius: 6,
+            fill: new Fill({ color: 'red' }),
+            stroke: new Stroke({ color: 'white', width: 2 }),
+          }),
+        }),
+      });
 
-      map.addLayer(vectorLayer);
+      this.map.addLayer(this.addLayer);
 
-      map.on('click', (event) => {
-        const feature = map.forEachFeatureAtPixel(event.pixel, (feature) => {
-          return feature;
-        });
-
-        if (feature) {
-          this.selectedFeature = feature;
-          this.isPanelVisible = true;
+      this.map.on('click', (event) => {
+        if (this.mode === 'add' && (this.addStep === 1 || this.addStep === 2)) {
+          this.setAddPoint(event.coordinate);
+        } else {
+          this.handleFeatureClick(event);
         }
       });
     },
-    getIcon(feature) {
-      const comfortTy = feature.get('comfort_ty');
-      const type = feature.get('type');
-      const affilation = feature.get('affilation');
-      const replace = feature.get('replace');
-
-      if (type === 1) {
-        return '/icons/busTrue.svg'; 
-      } else if (type === 2) {
-        return '/icons/busFalse.svg'; 
-      } else if (type === 3) {
-        return '/icons/busType3.svg';
-      } else if (type === 4) {
-        return '/icons/busType4.svg'; 
-      } else {
-        return '/icons/busType5.svg'; 
+    handleFeatureClick(event) {
+      if (this.mode === 'add') return;
+      const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
+        return feature;
+      });
+      if (feature && this.mode !== 'add') {
+        this.selectedFeature = feature;
+        this.isPanelVisible = true;
       }
-
+    },
+    setAddPoint(coordinate) {
+      this.addPoint = coordinate;
+      this.addLayer.getSource().clear();
+      this.addLayer.getSource().addFeature(
+        new ol.Feature({
+          geometry: new Point(coordinate),
+        })
+      );
+      this.isPanelVisible = true;
+      this.addStep = 2;
+    },
+    confirmPoint() {
+      this.addStep = 3;
+    },
+    submitStopText() {
+      if (this.newPointText.trim()) {
+        console.log('Текст остановки:', this.newPointText);
+        this.addStep = 4; // Переход к шагу завершения
+      }
+      else {
+        alert('Пожалуйста, введите текст остановки.');
+      }
+    },
+    exitAddMode() {
+      this.mode = 'default';
+      this.addStep = 1; // Сброс шага
+      this.newPointText = ''; // Очистка текста
+      this.addPoint = null; // Очистка точки
+      this.addLayer.getSource().clear(); // Очистка слоя
+      this.isPanelVisible = false; // Закрытие панели
+      this.$router.push('/'); // Перенаправление на главную страницу
+    },
+    getIcon(feature) {
+      const type = feature.get('type');
+      switch (type) {
+        case 1: return '/icons/busTrue.svg';
+        case 2: return '/icons/busFalse.svg';
+        case 3: return '/icons/busType3.svg';
+        case 4: return '/icons/busType4.svg';
+        default: return '/icons/busType5.svg';
+      }
     },
     closePanel() {
       this.isPanelVisible = false;
       this.selectedFeature = null;
+      this.addPoint = null;
+      this.addLayer.getSource().clear();
     },
     getInformationType(type) {
       switch (type) {
@@ -164,8 +242,24 @@ export default {
       }
     },
   },
+  watch: {
+    "$route.query.mode": {
+      immediate: true, // Вызываем при загрузке
+      handler(newMode) {
+        this.mode= newMode || "default";
+        if (this.mode === 'add')
+        {
+          this.isPanelVisible = true;
+        }
+        console.log(`Текущий режим: ${this.mode}`);
+      }
+    }
+  }
 };
 </script>
+
+    
+
 
 <style scoped>
 #map-container {
@@ -206,7 +300,38 @@ export default {
   font-size: 20px;
   cursor: pointer;
 }
+.add-title {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
 
+.add-instruction {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.add-success {
+  font-size: 16px;
+  color: green;
+  margin-bottom: 10px;
+}
+
+.confirm-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.text-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 2fr;

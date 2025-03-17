@@ -10,9 +10,9 @@
           <img src="/public/icons/menu.svg" alt="Меню" class="w-6 h-6" />
         </button>
           <div v-if="menuOpen" class="absolute right-0 mt-2 w-48 bg-white text-black rounded-md shadow-lg z-50">
-            <button class="block w-full px-4 py-2 text-left hover:bg-gray-200">Удалить остановку</button>
-            <button class="block w-full px-4 py-2 text-left hover:bg-gray-200">Редактировать остановку</button>
-            <button class="block w-full px-4 py-2 text-left hover:bg-gray-200">Добавить остановку</button>
+            <button @click="setMode('delete')" class="block w-full px-4 py-2 text-left hover:bg-gray-200">Удалить остановку</button>
+            <button @click="setMode('edit')" class="block w-full px-4 py-2 text-left hover:bg-gray-200">Редактировать остановку</button>
+            <button @click="setMode('add')" class="block w-full px-4 py-2 text-left hover:bg-gray-200">Добавить остановку</button>
           </div>
         </div>
   
@@ -55,7 +55,12 @@
       },
       toggleMenu() {
         this.menuOpen = !this.menuOpen;
-      }
+      },
+      setMode(mode) {
+      
+      this.menuOpen = false;
+      this.$router.push({ path: "/", query: { mode } });
+    }
     },
     watch: {
       '$route'() {
@@ -99,4 +104,3 @@ button img {
     position: relative;
   }
   </style>
-  

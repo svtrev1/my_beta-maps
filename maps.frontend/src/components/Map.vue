@@ -171,7 +171,9 @@ export default {
 #map-container {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  height: 100%; /* Убираем лишний отступ снизу */
+  margin-top: 40px;  /* Учитываем высоту хедера */
+  z-index: 5;
 }
 
 #info-panel {
@@ -183,7 +185,7 @@ export default {
   background: white;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   transition: left 0.3s ease-in-out;
-  z-index: 1000;
+  z-index: 100;
   color: black;
 }
 

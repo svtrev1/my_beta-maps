@@ -1,31 +1,18 @@
 <template>
-  <div id="app">
-    <Map />
+  <div id="app" class="flex flex-col h-screen">
+    <Header />
+    <div class="flex-grow overflow-hidden">
+      <router-view />
+    </div>
   </div>
 </template>
 
 <script>
-import Map from './components/Map.vue';
+import Header from './components/Header.vue';
 
 export default {
   components: {
-    Map,
-  },
+    Header
+  }
 };
 </script>
-
-<style>
-html, body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-#app {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-</style>

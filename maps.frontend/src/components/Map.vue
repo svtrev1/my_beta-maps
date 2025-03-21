@@ -11,12 +11,12 @@
           <h2 class="text-xl font-bold text-gray-800 text-center">Добавление новой остановки</h2>
 
           <!-- Шаг 1: Выбор точки -->
-          <div v-if="addStep === 1" class="text-center">
+          <div v-if="step === 1" class="text-center">
             <p class="text-gray-700 text-lg">Кликните на карту, чтобы установить точку!</p>
           </div>
 
           <!-- Шаг 2: Подтверждение точки -->
-          <div v-if="addStep === 2" class="text-center space-y-3">
+          <div v-if="step === 2" class="text-center space-y-3">
             <p class="text-gray-700 text-lg">Вы указали точку, можете ее переместить. Подтвердить?</p>
             <button @click="confirmPoint" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
               Да
@@ -24,7 +24,7 @@
           </div>
 
           <!-- Шаг 3: Ввод информации об остановке -->
-        <div v-if="addStep === 3" class="space-y-4 max-h-[450px] overflow-y-auto">
+        <div v-if="step === 3" class="space-y-4 max-h-[450px] overflow-y-auto">
           <p class="text-gray-700 text-lg text-center font-semibold">📝 Заполните информацию об остановке:</p>
 
           <!-- Название остановки (обязательное) -->
@@ -113,7 +113,7 @@
 
 
           <!-- Шаг 4: Завершение -->
-          <div v-if="addStep === 4" class="text-center space-y-3">
+          <div v-if="step === 4" class="text-center space-y-3">
             <p class="text-gray-600 text-lg font-semibold">Остановка добавлена!</p>
             <div class="flex justify-between">
               <button @click="startNewPoint" class="bg-green-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg">
@@ -125,7 +125,24 @@
             </div>
           </div>
         </div>
+        <div v-else-if="mode === 'delete'">
+          <!-- Заголовок -->
+          <h2 class="text-xl font-bold text-gray-800 text-center">Удаление остановки</h2>
 
+          <!-- Шаг 1: Выбор остановки -->
+          <div v-if="step === 1" class="text-center">
+            <p class="text-gray-700 text-lg">Кликните на остановку, чтобы удалить ее!</p>
+          </div>
+
+          <!-- Шаг 2: Подтверждение точки -->
+          <div v-if="step === 2" class="text-center space-y-3">
+            <p class="text-gray-700 text-lg">Вы выбрали остановку <strong>{{selectedFeature.get('name') }}</strong>, можете ее поменять. Подтвердить?</p>
+            <button @click="confirmDelete" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
+              Да
+            </button>
+          </div>
+
+        </div>
         <div v-else-if="selectedFeature" class="info-grid">
           <template v-if="selectedFeature.get('name')">
             <div class="info-label">Наименование остановки:</div>
@@ -200,10 +217,8 @@ export default defineComponent({
     return {
       isPanelVisible: false,
       selectedFeature: null,
-      addPoint: null,
       addLayer: null,
-      addStep: 1,
-      newPointText: null,
+      step: 1,
       newStop: {
         name: '',
         street: '',
@@ -233,7 +248,7 @@ export default defineComponent({
   },
   watch: {
     mode() {
-      if (this.mode === 'add') {
+      if (this.mode === 'add' || this.mode === 'delete') {
         this.isPanelVisible = true;
       } else {
         this.isPanelVisible = false;
@@ -294,7 +309,7 @@ export default defineComponent({
       this.map.addLayer(this.addLayer);
 
       this.map.on('click', (event) => {
-        if (this.mode === 'add' && (this.addStep === 1 || this.addStep === 2)) {
+        if (this.mode === 'add' && (this.step === 1 || this.step === 2)) {
           this.setAddPoint(event.coordinate);
         } else {
           this.handleFeatureClick(event);
@@ -302,17 +317,23 @@ export default defineComponent({
       });
     },
     handleFeatureClick(event) {
-      if (this.mode === 'add') return;
-      const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
-        return feature;
-      });
-      if (feature && this.mode !== 'add') {
+      if (this.mode === 'add') {
+        const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
+          return feature;
+        });
+      }
+      if (feature && this.mode === 'default') {
         this.selectedFeature = feature;
         this.isPanelVisible = true;
       }
+      if (feature && this.mode === 'delete') {
+        this.selectedFeature = feature;
+        this.step = 2;
+        this.isPanelVisible = true;
+        
+      }
     },
     setAddPoint(coordinate) {
-      this.addPoint = coordinate;
       this.addLayer.getSource().clear();
       this.addLayer.getSource().addFeature(
         new Feature({
@@ -321,30 +342,32 @@ export default defineComponent({
       );
       this.newStop.coordinates = coordinate;
       this.isPanelVisible = true;
-      this.addStep = 2;
+      this.step = 2;
     },
     confirmPoint() {
-      this.addStep = 3;
+      this.step = 3;
+    },
+    confirmDelete() {
+      console.log("Удаление остановки:", this.selectedFeature.get('name'));
+      this.modeStore.setMode('default');
+      this.isPanelVisible = false;
+      this.step = 1;
     },
     submitStopInfo() {
       this.errors.name = this.newStop.name.trim() ? '' : 'Название остановвки обязательно';
       this.errors.street = this.newStop.street.trim() ? '' : 'Улица обязательна';
       if (this.errors.name || this.errors.street) return;
       console.log("Данные новой остановки:", this.newStop);
-      this.addStep = 4;
+      this.step = 4;
     },
     exitAddMode() {
       this.modeStore.setMode('default'); 
-      this.addStep = 1;
-      this.newPointText = '';
-      this.addPoint = null;
+      this.step = 1;
       this.addLayer.getSource().clear();
       this.isPanelVisible = false;
     },
     startNewPoint() {
-      this.addStep = 1;
-      this.newPointText = '';
-      this.addPoint = null;
+      this.step = 1;
       this.addLayer.getSource().clear();
     },
     getIcon(feature) {
@@ -360,14 +383,10 @@ export default defineComponent({
     closePanel() {
       this.isPanelVisible = false;
       this.modeStore.setMode('default'); 
-      this.addStep = 1;
-      this.newPointText = '';
-      this.addPoint = null;
+      this.step = 1;
       this.addLayer.getSource().clear();
       this.isPanelVisible = false;
       this.selectedFeature = null;
-      this.addPoint = null;
-      this.addLayer.getSource().clear();
     },
     getInformationType(type) {
       switch (type) {

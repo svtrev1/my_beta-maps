@@ -1,0 +1,56 @@
+server {
+  listen 80;
+  listen [::]:80;
+
+  server_name localhost;  # Используем localhost для разработки
+  server_tokens off;
+
+  # Проксируем запросы на фронтенд (Vue.js dev-сервер)
+  location / {
+    proxy_set_header   X-Forwarded-For $remote_addr;
+    proxy_set_header   Host $http_host;
+    proxy_pass http://frontend:5173;  # Указываем адрес фронтенда
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+  # Проксируем запросы к API на бэкенд
+  location /api {
+    proxy_pass http://backend:9000;  # Указываем адрес бэкенда
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    # rewrite ^/api/(.*) /$1 break;  # Упрощаем для разработки
+  }
+
+  # Проксируем запросы к Swagger
+  location /swagger {
+    proxy_pass http://backend:9000;  # Указываем адрес бэкенда
+    # rewrite ^/swagger/(.*) /$1 break;  # Упрощаем для разработки
+  }
+
+  # Проксируем запросы к GeoServer
+  location /geoserver {
+    proxy_pass http://geoserver:8080/geoserver;  # Указываем адрес GeoServer
+    proxy_pass_header Set-Cookie;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_redirect off;
+  }
+
+  # Проксируем запросы к загрузкам (uploads)
+  location /uploads/ {
+    proxy_pass http://backend:9000;  # Указываем адрес бэкенда
+    rewrite ^/uploads/(.*) /uploads/$1 break;
+  }
+
+  # Проксируем запросы к загрузкам (альтернативный путь)
+  location /app/maps.backend.uploads {
+    proxy_pass http://backend:9000;  # Указываем адрес бэкенда
+    rewrite ^/app/maps.backend.uploads/(.*) /uploads/$1 break;
+  }
+}

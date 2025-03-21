@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Map from '../Map.vue';
-import Login from '../Login.vue';
+import Map from '../components/Map.vue';
+import Login from '../components/Login.vue';
 
 const routes = [
   { path: '/', component: Map },

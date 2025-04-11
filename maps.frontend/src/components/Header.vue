@@ -28,16 +28,18 @@
 
 <script>
 import { ref } from "vue";
-import { useModeStore } from "@/store/mode"; // <-- Убедись, что путь правильный!
+import { useModeStore } from "@/store/mode"; 
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { useAuthStore } from '@/store/auth';
 
 export default {
   setup() {
-    const modeStore = useModeStore(); // <-- Инициализируем store
-    const { mode } = storeToRefs(modeStore); // <-- Делаем mode реактивным
+    const modeStore = useModeStore(); 
+    const authStore = useAuthStore();
+    const { mode } = storeToRefs(modeStore); 
+    const { isAuthenticated } = storeToRefs(authStore);
 
-    const isAuthenticated = ref(localStorage.getItem("auth") === "true");
     const menuOpen = ref(false);
     const router = useRouter();
 
@@ -54,8 +56,7 @@ export default {
     };
 
     const logout = () => {
-      localStorage.removeItem("auth");
-      isAuthenticated.value = false;
+      authStore.logout();
       menuOpen.value = false;
       router.push("/");
     };

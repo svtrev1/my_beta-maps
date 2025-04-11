@@ -20,24 +20,23 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      username: '',
-      password: ''
-    };
-  },
-  methods: {
-    login() {
-      // Тут должна быть логика авторизации
-      if (this.username === 'admin' && this.password === 'password') {
-        localStorage.setItem('auth', true); // Пример авторизации
-        this.$router.push('/'); // Перенаправляем на главную страницу
-      } else {
-        alert('Неверный логин или пароль');
-      }
-    }
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const username = ref('')
+const password = ref('')
+
+function login() {
+  if (username.value === 'admin' && password.value === 'password') {
+    authStore.login('true') // это метод из твоего authStore
+    router.push('/')
+  } else {
+    alert('Неверный логин или пароль')
   }
-};
+}
 </script>

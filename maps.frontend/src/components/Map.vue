@@ -22,17 +22,7 @@
       @start-new="startNew"
     />
 
-    <MapDeletePanel
-      v-if="mode === 'delete'"
-      :is-panel-visible="isPanelVisible"
-      :step="step"
-      :selected-feature="selectedFeature"
-      @close-panel="closePanel"
-      @submit-delete="submitDelete"
-      @start-new="startNew"
-    />
-
-    <MapEditPanel
+    <MapEditDeletePanel
       v-if="mode === 'edit'"
       :is-panel-visible="isPanelVisible"
       :step="step"
@@ -44,6 +34,9 @@
       @submit-edit="submitEdit"
       @update-field="updateField"
       @confirm-point="confirmPoint"
+      @submit-delete="submitDelete"
+      @confirm-delete="confirmDelete"
+      @cancel-delete="cancelDelete"
     />
 
   </div>
@@ -66,8 +59,8 @@ import Point from 'ol/geom/Point';
 import { useModeStore } from '../store/mode';
 import MapInfoPanel from './MapInfoPanel.vue';
 import MapAddPanel from './MapAddPanel.vue';
-import MapDeletePanel from './MapDeletePanel.vue';
-import MapEditPanel from './MapEditPanel.vue';
+import MapEditDeletePanel from './MapEditDeletePanel.vue';
+import { useAuthStore } from '@/store/auth';
 
 export default defineComponent({
   name: 'MapComponent',
@@ -79,8 +72,7 @@ export default defineComponent({
   components: {
     MapInfoPanel,
     MapAddPanel,
-    MapDeletePanel,
-    MapEditPanel
+    MapEditDeletePanel
   },
   data() {
     return {
@@ -127,15 +119,18 @@ export default defineComponent({
   },
   watch: {
     mode() {
-      if (this.mode === 'add' || this.mode === 'delete' || this.mode === 'edit') {
+      if (this.mode === 'add')
         this.isPanelVisible = true;
-      } else {
-        this.isPanelVisible = false;
-      }
     },
     selectedType(newValue) {
       this.$emit("update:type", newValue);
     },
+  },
+  computed: {
+    isAuthenticated() {
+      const authStore = useAuthStore();
+      return authStore.isAuthenticated;
+    }
   },
   methods: {
     initMap() {
@@ -201,18 +196,13 @@ export default defineComponent({
       });
 
       if (feature) {
-        if (this.mode === 'default') {
+        if (this.mode === 'default' && !this.isAuthenticated) {
           this.selectedFeature = feature;
           this.isPanelVisible = true;
         }
-        if (this.mode === 'delete') {
+        else if (this.isAuthenticated) {
           this.selectedFeature = feature;
-          this.step = 2;
-          this.isPanelVisible = true;
-        }
-        if (this.mode === 'edit') {
-          this.selectedFeature = feature;
-          this.step = 2;
+          this.modeStore.setMode('edit');
           this.prepareEditMode(feature);
           this.isPanelVisible = true;
         }
@@ -245,6 +235,7 @@ export default defineComponent({
 
       console.log("Обновленная информация:", this.tempStop);
       this.step = 4;
+      this.resetTempData();
     },
 
     setAddPoint(coordinate) {
@@ -263,11 +254,25 @@ export default defineComponent({
       this.step = 3;
     },
 
+    // submitDelete() {
+    //   console.log("Удаление остановки:", this.selectedFeature.get('name'));
+    //   this.isPanelVisible = false;
+    //   this.step = 1;
+    //   this.modeStore.setMode('default');
+    // },
+
     submitDelete() {
       console.log("Удаление остановки:", this.selectedFeature.get('name'));
-      this.isPanelVisible = false;
+      this.step = 5;
+      this.resetTempData();
+    },
+
+    cancelDelete() {
       this.step = 1;
-      this.modeStore.setMode('default');
+    },
+
+    confirmDelete() {
+      this.step = 4;
     },
 
     submitAdd() {
@@ -276,14 +281,17 @@ export default defineComponent({
       if (this.errors.name || this.errors.street) return;
       console.log("Данные новой остановки:", this.tempStop);
       this.step = 4;
+      this.resetTempData();
     },
 
     startNew() {
       this.step = 1;
       this.addLayer.getSource().clear();
+      this.resetTempData();
     },
 
     prepareEditMode(feature) {
+      this.resetTempData();
       this.selectedFeature = feature;
       this.tempStop = {
         name: feature.get('name') || '',
@@ -296,7 +304,7 @@ export default defineComponent({
         type: feature.get('type') || 1,
         coordinates: feature.getGeometry().getCoordinates(),
       };
-      this.step = 2;
+      this.step = 1;
       this.isPanelVisible = true;
     },
 
@@ -317,7 +325,36 @@ export default defineComponent({
       this.step = 1;
       this.addLayer.getSource().clear();
       this.selectedFeature = null;
+      this.resetTempData();
     },
+
+    resetTempData() {
+      this.tempStop = {
+      name: '',
+      street: '',
+      year: '',
+      financing: '',
+      numbus: '',
+      numtaxi: '',
+      comments: '',
+      type: 1,
+      coordinates: null,
+    };
+    this.errors = {
+      name: '',
+      street: '',
+    };
+    this.editFields = {
+      name: false,
+      street: false,
+      year: false,
+      financing: false,
+      numbus: false,
+      numtaxi: false,
+      comments: false,
+      type: false,
+    };
+    }
   },
 });
 </script>

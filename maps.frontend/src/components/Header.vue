@@ -7,16 +7,9 @@
     </h2>
 
     <div class="ml-auto flex items-center space-x-4">
-      <div v-if="isAuthenticated" class="relative">
-        <button @click="toggleMenu" class="p-2">
-          <img src="/icons/menu.svg" alt="Меню" class="w-6 h-6" />
-        </button>
-        <div v-if="menuOpen" class="absolute right-0 mt-2 w-48 bg-white text-black rounded-md shadow-lg z-50">
-          <button @click="setMode('delete')" class="block w-full px-4 py-2 text-left hover:bg-gray-200">Удалить остановку</button>
-          <button @click="setMode('edit')" class="block w-full px-4 py-2 text-left hover:bg-gray-200">Редактировать остановку</button>
-          <button @click="setMode('add')" class="block w-full px-4 py-2 text-left hover:bg-gray-200">Добавить остановку</button>
-        </div>
-      </div>
+      <button v-if="isAuthenticated" @click="setMode('add')" class="p-2" style="font-size: large;">
+        +
+      </button>
 
       <button @click="handleAuth" class="p-2">
         <img v-if="!isAuthenticated" src="/icons/login.svg" alt="Вход" class="w-6 h-6">
@@ -37,42 +30,27 @@ export default {
   setup() {
     const modeStore = useModeStore(); 
     const authStore = useAuthStore();
-    const { mode } = storeToRefs(modeStore); 
+    // const { mode } = storeToRefs(modeStore); 
     const { isAuthenticated } = storeToRefs(authStore);
-
-    const menuOpen = ref(false);
     const router = useRouter();
-
-    const toggleMenu = () => {
-      menuOpen.value = !menuOpen.value;
-    };
 
     const handleAuth = () => {
       if (isAuthenticated.value) {
-        logout();
+        authStore.logout();
+        modeStore.setMode('default');
+        router.push("/");
       } else {
         router.push("/login");
       }
     };
 
-    const logout = () => {
-      authStore.logout();
-      menuOpen.value = false;
-      router.push("/");
-    };
-
     const setMode = (newMode) => {
-      menuOpen.value = false;
       modeStore.setMode(newMode); 
     };
 
     return {
-      mode, 
       isAuthenticated,
-      menuOpen,
-      toggleMenu,
       handleAuth,
-      logout,
       setMode,
     };
   },

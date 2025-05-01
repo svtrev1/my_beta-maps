@@ -7,7 +7,7 @@
           <h2 class="text-xl font-bold text-gray-800 text-center">Редактирование остановки</h2>
             
             <!-- Шаг 2: Редактирование информации о остановке -->
-            <div v-if="step === 1" class="space-y-4 max-h-[450px] overflow-y-autos">
+            <div v-if="step === 1" class="space-y-4 overflow-y-autos">
                 <p class="text-gray-700 text-lg text-center" style="word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;"><strong>{{selectedFeature.get('name') }}</strong></p>
                 
                 <button @click="confirmDelete" 
@@ -385,5 +385,3 @@
     }
   }
   </script>
-  
-  

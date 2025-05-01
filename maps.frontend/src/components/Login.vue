@@ -4,8 +4,8 @@
       <h3 class="text-lg font-semibold mb-4">Авторизация</h3>
       <form @submit.prevent="login">
         <div class="mb-4">
-          <label for="username" class="block text-sm">Логин:</label>
-          <input type="text" id="username" v-model="username" class="w-full px-4 py-2 border border-gray-300 rounded" required />
+          <label for="email" class="block text-sm">Email:</label>
+          <input type="email" id="email" v-model="email" class="w-full px-4 py-2 border border-gray-300 rounded" required />
         </div>
         <div class="mb-4">
           <label for="password" class="block text-sm">Пароль:</label>
@@ -19,24 +19,46 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
+import http from '@/http'
 
-const router = useRouter()
-const authStore = useAuthStore()
+ const router = useRouter()
+ const authStore = useAuthStore()
 
-const username = ref('')
-const password = ref('')
+ const email = ref('')
+ const password = ref('')
+ const errorMessage = ref('')
 
-function login() {
-  if (username.value === 'admin' && password.value === 'password') {
-    authStore.login('true') // это метод из твоего authStore
-    router.push('/')
-  } else {
-    alert('Неверный логин или пароль')
-  }
-}
+ async function login() {
+   errorMessage.value = ''
+   
+   try {
+     // 1. Получаем CSRF-куки (GET)
+    await http.get('/sanctum/csrf-cookie')
+
+     // 2. Пробуем войти  → POST /api/login
+    const response = await http.post('/login', {
+       email: email.value,
+       password: password.value
+     })
+     
+     // 3. Проверяем структуру ответа
+     if (!response.data?.token || !response.data?.user) {
+       throw new Error('Неверный формат ответа от сервера')
+     }
+     
+     // 4. Сохраняем данные
+     authStore.login(response.data.token, response.data.user)
+     
+     // 5. Перенаправляем
+     router.push('/')
+   } catch (error) {
+     console.error('Ошибка авторизации:', error)
+     errorMessage.value = 'Неверный email или пароль'
+     authStore.logout()
+   }
+ }
 </script>

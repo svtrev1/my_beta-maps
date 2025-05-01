@@ -1,4 +1,5 @@
 
+
 .info-panel {
     position: absolute;
     top: 0;
@@ -105,3 +106,5 @@
   .btn-danger:hover {
     background-color: #dc2626;
   }
+
+  

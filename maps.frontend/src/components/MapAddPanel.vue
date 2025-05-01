@@ -20,7 +20,7 @@
             </div>
   
             <!-- Шаг 3: Ввод информации об остановке -->
-            <div v-if="step === 3" class="space-y-4 max-h-[450px] overflow-y-auto">
+            <div v-if="step === 3" class="space-y-4 ">
                 <p class="text-gray-700 text-lg text-center font-semibold">Заполните информацию об остановке:</p>
   
                 <!-- Название остановки (обязательное) -->

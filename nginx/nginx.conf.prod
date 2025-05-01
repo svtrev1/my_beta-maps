@@ -1,52 +1,52 @@
 server {
-  listen 80;
-  listen [::]:80;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name betamaps.admsurgut.ru;
+    server_tokens off;
 
-  server_name betamaps.admsurgut.ru;
-  server_tokens off;
+    # корневая папка Laravel-public
+    root /var/www/html/public;
+    index index.php index.html;
 
-  location / {
-    proxy_set_header   X-Forwarded-For $remote_addr;
-    proxy_set_header   Host $http_host;
-    proxy_pass http://frontend:3000;
-  }
+    # 1) Все /api/* и /sanctum/* → front-controller
+    location ^~ /api/ {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    location ^~ /sanctum/ {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
 
-  location /api {
-    proxy_pass http://maps-backend:9000;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Host $host;
-    #rewrite ^/api/(.*) /$1 break;
-  }
+    # 2) SPA-фронтенд
+    location / {
+        proxy_pass http://frontend:3000;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-  location /swagger {
-    proxy_pass http://maps-backend:9000;
-    #rewrite ^/swagger/(.*) /$1 break;
-  }
+    # 3) GeoServer
+    location /geoserver {
+        proxy_pass http://maps-geoserver:8080/geoserver;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-  location /geoserver {
-    proxy_pass http://maps-geoserver:8080/geoserver;
-    proxy_pass_header Set-Cookie;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Host $host;
-    proxy_set_header X-Forwarded-Server $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_redirect off;
-  }
+    # 4) Все .php → FPM, всегда index.php
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_index index.php;
+        fastcgi_pass maps-backend:9000;
 
-  location /uploads/ {
-    proxy_pass http://maps-backend:9000;
-    rewrite ^/uploads/(.*) /uploads/$1 break;
-  }
-
-  location /app/maps.backend.uploads {
-    proxy_pass http://maps-backend:9000;
-    rewrite ^/app/maps.backend.uploads/(.*) /uploads/$1 break;
-  }
-
-  #location /auth {
-    #proxy_pass http://api:9000;
-    #rewrite ^/api/(.*) /$1 break;
-  #}
+        # теперь правильный путь для FPM
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param PATH_INFO       $fastcgi_path_info;
+        fastcgi_param HTTP_X_FORWARDED_PROTO $scheme;
+        fastcgi_param HTTP_X_FORWARDED_FOR   $proxy_add_x_forwarded_for;
+        fastcgi_param HTTP_HOST              $http_host;
+    }
 }
+

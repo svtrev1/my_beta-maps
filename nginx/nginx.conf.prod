@@ -4,19 +4,35 @@ server {
     server_name betamaps.admsurgut.ru;
     server_tokens off;
 
-    # корневая папка Laravel-public
     root /var/www/html/public;
     index index.php index.html;
 
-    # 1) Все /api/* и /sanctum/* → front-controller
-    location ^~ /api/ {
+    # Laravel API + Sanctum
+    location ~ ^/(api|sanctum)/ {
         try_files $uri $uri/ /index.php?$query_string;
-    }
-    location ^~ /sanctum/ {
-        try_files $uri $uri/ /index.php?$query_string;
+
+        include fastcgi.conf;
+        fastcgi_pass maps-backend:9000;
+        fastcgi_index index.php;
+	fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+	fastcgi_param PATH_INFO       "";
+        fastcgi_param HTTP_X_FORWARDED_PROTO $scheme;
+        fastcgi_param HTTP_X_FORWARDED_FOR   $proxy_add_x_forwarded_for;
+        fastcgi_param HTTP_HOST              $http_host;
+
+        # Дополнительные заголовки для Laravel Sanctum
+        fastcgi_param HTTP_X_REQUESTED_WITH  $http_x_requested_with;
+        fastcgi_param HTTP_X_CSRF_TOKEN      $http_x_csrf_token;
+        fastcgi_param HTTP_AUTHORIZATION     $http_authorization;
+
+	    proxy_set_header Cookie $http_cookie;
+
+        fastcgi_read_timeout 300;
+        fastcgi_send_timeout 300;
+
     }
 
-    # 2) SPA-фронтенд
+    # SPA фронтенд
     location / {
         proxy_pass http://frontend:3000;
         proxy_set_header Host              $host;
@@ -25,7 +41,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # 3) GeoServer
+    # GeoServer
     location /geoserver {
         proxy_pass http://maps-geoserver:8080/geoserver;
         proxy_set_header Host              $host;
@@ -34,15 +50,13 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # 4) Все .php → FPM, всегда index.php
+    # .php файлы через FastCGI
     location ~ \.php$ {
-        include fastcgi_params;
+        include fastcgi.conf;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_index index.php;
         fastcgi_pass maps-backend:9000;
-
-        # теперь правильный путь для FPM
-        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param PATH_INFO       $fastcgi_path_info;
         fastcgi_param HTTP_X_FORWARDED_PROTO $scheme;
         fastcgi_param HTTP_X_FORWARDED_FOR   $proxy_add_x_forwarded_for;

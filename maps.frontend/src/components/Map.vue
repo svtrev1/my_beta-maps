@@ -17,7 +17,7 @@
       :errors="errors"
       :icons="icons"
       @close-panel="closePanel"
-      @confirm-point="confirmPoint"
+      @confirm-point="confirmPointAdd"
       @submit-add="submitAdd"
       @start-new="startNew"
     />
@@ -33,7 +33,7 @@
       @close-panel="closePanel"
       @submit-edit="submitEdit"
       @update-field="updateField"
-      @confirm-point="confirmPoint"
+      @confirm-point="confirmPointEdit"
       @submit-delete="submitDelete"
       @confirm-delete="confirmDelete"
       @cancel-delete="cancelDelete"
@@ -52,7 +52,7 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Style, Circle, Fill, Stroke } from 'ol/style';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import { GeoJSON } from 'ol/format';
 import Icon from 'ol/style/Icon';
 import Point from 'ol/geom/Point';
@@ -61,6 +61,8 @@ import MapInfoPanel from './MapInfoPanel.vue';
 import MapAddPanel from './MapAddPanel.vue';
 import MapEditDeletePanel from './MapEditDeletePanel.vue';
 import { useAuthStore } from '@/store/auth';
+import axios from 'axios';
+import http from '@/http'
 
 export default defineComponent({
   name: 'MapComponent',
@@ -91,6 +93,7 @@ export default defineComponent({
         type: 1,
         coordinates: null,
       },
+      busSource: null,
       editFields: {
         name: false,
         street: false,
@@ -154,6 +157,7 @@ export default defineComponent({
         format: new GeoJSON(),
         url: 'http://betamaps.admsurgut.ru/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne:busstation&outputFormat=application/json',
       });
+      this.busSource = vectorSource;
 
       const vectorLayer = new VectorLayer({
         source: vectorSource,
@@ -230,12 +234,35 @@ export default defineComponent({
       // }
     },
 
-    submitEdit() {
-      console.log("Редактирование остановки:", this.selectedFeature.get('name'));
+    // submitEdit() {
+    //   console.log("Редактирование остановки:", this.selectedFeature.get('name'));
 
-      console.log("Обновленная информация:", this.tempStop);
-      this.step = 4;
-      this.resetTempData();
+    //   console.log("Обновленная информация:", this.tempStop);
+
+    //   this.step = 4;
+    //   this.resetTempData();
+    // },
+
+    async submitEdit() {
+      try {
+        const fullId = this.selectedFeature.getId();
+        const id = fullId?.split('.')[1];
+        this.errors = {};
+
+        const response = await http.put(`/busstop/${id}`, this.tempStop);
+        console.log(response.data);
+        this.step = 3;
+        this.resetTempData();
+        this.busSource.clear(true);
+        this.busSource.refresh();
+      }
+      catch (error) {
+        if (error.response && error.response.status === 422) {
+          this.errors = error.response.data.errors;
+        } else {
+          console.error('Ошибка при отправке:', error);
+        }
+      }
     },
 
     setAddPoint(coordinate) {
@@ -245,26 +272,42 @@ export default defineComponent({
           geometry: new Point(coordinate),
         })
       );
-      this.tempStop.coordinates = coordinate;
+      const lonLat = toLonLat(coordinate);
+      this.tempStop.coordinates = lonLat;
       this.isPanelVisible = true;
       this.step = 2;
     },
 
-    confirmPoint() {
+    confirmPointEdit() {
+      this.step = 2;
+    },
+
+    confirmPointAdd() {
       this.step = 3;
     },
 
-    // submitDelete() {
-    //   console.log("Удаление остановки:", this.selectedFeature.get('name'));
-    //   this.isPanelVisible = false;
-    //   this.step = 1;
-    //   this.modeStore.setMode('default');
-    // },
+    async submitDelete() {
+      const fullId = this.selectedFeature.getId();
+      const id = fullId?.split('.')[1]; 
+      this.errors = {};
+      
+      try {
+        const response = await http.delete(`/busstop/${id}`);
 
-    submitDelete() {
-      console.log("Удаление остановки:", this.selectedFeature.get('name'));
-      this.step = 5;
-      this.resetTempData();
+        console.log(response.data);
+        this.step = 5;
+        this.resetTempData();
+        this.busSource.clear(true);
+        this.busSource.refresh();
+      }
+      catch (error) {
+        if (error.response && error.response.status === 422) {
+          this.errors = error.response.data.errors;
+        } else {
+          console.error('Ошибка при отправке:', error);
+        }
+      }
+      
     },
 
     cancelDelete() {
@@ -275,13 +318,29 @@ export default defineComponent({
       this.step = 4;
     },
 
-    submitAdd() {
-      this.errors.name = this.tempStop.name.trim() ? '' : 'Название остановки обязательно';
-      this.errors.street = this.tempStop.street.trim() ? '' : 'Улица обязательна';
-      if (this.errors.name || this.errors.street) return;
-      console.log("Данные новой остановки:", this.tempStop);
-      this.step = 4;
-      this.resetTempData();
+    getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    },
+
+    async submitAdd() {
+      this.errors = {};
+
+      try {
+        const response = await http.post('/addbusstop', this.tempStop);
+        console.log(response.data);
+        this.step = 4; 
+        this.resetTempData();
+        this.busSource.clear(true);
+        this.busSource.refresh();
+      } catch (error) {
+        if (error.response && error.response.status === 422) {
+          this.errors = error.response.data.errors;
+        } else {
+          console.error('Ошибка при отправке:', error);
+        }
+      }
     },
 
     startNew() {
@@ -302,7 +361,6 @@ export default defineComponent({
         numtaxi: feature.get('numtaxi') || '',
         comments: feature.get('comments') || '',
         type: feature.get('type') || 1,
-        coordinates: feature.getGeometry().getCoordinates(),
       };
       this.step = 1;
       this.isPanelVisible = true;

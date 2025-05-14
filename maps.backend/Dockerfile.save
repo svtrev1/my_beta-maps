@@ -1,0 +1,56 @@
+# Используем официальный образ PHP с FPM
+FROM php:8.2-fpm-alpine
+
+# Устанавливаем необходимые пакеты
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libxml2-dev \
+    libpq-dev \
+    zip \
+    git \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        gd \
+        pdo \
+        pdo_pgsql \
+        pgsql \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN touch /var/log/php_errors.log && chmod 777 /var/log/php_errors.log
+
+# Добавляем кастомные настройки PHP (память, время выполнения)
+RUN echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "pm.max_children = 50" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
+    && echo "error_log = /var/log/php_errors.log" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "log_errors = On" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "display_errors = On" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/custom.ini \
+    && touch /var/log/php_errors.log \
+    && chmod 777 /var/log/php_errors.log
+RUN echo "catch_workers_output = yes" >> /usr/local/etc/php-fpm.d/docker.conf
+RUN echo "php_flag[display_errors] = on" >> /usr/local/etc/php-fpm.d/docker.conf
+
+# Удаляем Xdebug, если он установлен
+RUN pecl uninstall xdebug && rm -f /usr/local/etc/php/conf.d/xdebug.ini
+
+# Устанавливаем Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Копируем файлы проекта в контейнер
+COPY . /var/www/html
+
+WORKDIR /var/www/html
+
+# Устанавливаем зависимости Laravel
+RUN composer install --optimize-autoloader --no-dev
+
+# Устанавливаем права на папки
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+EXPOSE 9000
+CMD ["php-fpm", "-F", "-R"]

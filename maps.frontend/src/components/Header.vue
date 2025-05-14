@@ -20,7 +20,6 @@
 </template>
 
 <script>
-import { ref } from "vue";
 import { useModeStore } from "@/store/mode"; 
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
@@ -30,7 +29,6 @@ export default {
   setup() {
     const modeStore = useModeStore(); 
     const authStore = useAuthStore();
-    // const { mode } = storeToRefs(modeStore); 
     const { isAuthenticated } = storeToRefs(authStore);
     const router = useRouter();
 
@@ -51,7 +49,7 @@ export default {
     return {
       isAuthenticated,
       handleAuth,
-      setMode,
+      setMode
     };
   },
 };

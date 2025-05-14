@@ -14,7 +14,7 @@
                     class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">
                     Удалить остановку
                 </button>
-
+                <!-- Наименование -->
                 <!-- Режим просмотра -->
                 <div v-if="!editFields.name" class="flex items-center justify-between gap-4 flex-wrap">
                     <div class="flex-1 flex items-center gap-2 min-w-0">
@@ -49,6 +49,46 @@
                     <button
                         :disabled="!tempStop.name.trim()"
                         @click="() => { selectedFeature.set('name', tempStop.name); editFields.name = false; }"
+                        class="p-2 flex items-center justify-center">
+                        <img src="/icons/save.svg" alt="Сохранить" class="w-6 h-6" />
+                    </button>
+                </div>
+
+                <!-- Местоположение -->
+                <!-- Режим просмотра -->
+                <div v-if="!editFields.street" class="flex items-center justify-between gap-4 flex-wrap">
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <span class="font-semibold whitespace-nowrap shrink-0">
+                        Местоположение: <span class="text-red-500">*</span>
+                        </span>
+                        <div class="whitespace-pre-wrap break-words flex-1 min-w-0 p-2">
+                        {{ selectedFeature.get('street') }}
+                        </div>
+                    </div>
+                    <button @click="() => { editFields.street = true; tempStop.street = selectedFeature.get('street');}" 
+                        class="p-2 flex items-center justify-center">
+                        <img src="/icons/edit.svg" alt="Изменить" class="w-6 h-6" />
+                    </button>
+                </div>
+
+
+                <!-- Режим редактирования -->
+                <div v-else-if="editFields.street" class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <span class="font-semibold whitespace-nowrap shrink-0">
+                        Местоположение:<span class="text-red-500">*</span>
+                        </span>
+                        <textarea
+                        v-model="tempStop.street"
+                        rows="1"
+                        class="resize-none overflow-hidden flex-1 min-w-0 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Введите местоположение"
+                        @input="autoResize($event)"
+                        ></textarea>
+                    </div>
+                    <button
+                        :disabled="!tempStop.street.trim()"
+                        @click="() => { selectedFeature.set('street', tempStop.street); editFields.street = false; }"
                         class="p-2 flex items-center justify-center">
                         <img src="/icons/save.svg" alt="Сохранить" class="w-6 h-6" />
                     </button>
@@ -269,7 +309,7 @@
 
                 <button @click="confirmPoint" 
                 class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-                Изменить данные остановки! 
+                Изменить данные остановки 
                 </button>
             </div>
 

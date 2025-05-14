@@ -22,6 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     http.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
   }
+  
 
   // Разлогиниваемся: POST /api/logout, затем чистим состояние
   async function logout() {

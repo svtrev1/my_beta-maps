@@ -5,12 +5,12 @@
         
         <div v-if="selectedFeature" class="info-grid">
           <template v-if="selectedFeature.get('name')">
-            <div class="info-label">Наименование остановки:</div>
+            <div class="info-label">Наименование:</div>
             <div class="info-value">{{ selectedFeature.get('name') }}</div>
           </template>
-          <template v-if="selectedFeature.get('id')">
-            <div class="info-label">id:</div>
-            <div class="info-value">{{ selectedFeature.get('id') }}</div>
+          <template v-if="selectedFeature.get('street')">
+            <div class="info-label">Местоположение:</div>
+            <div class="info-value">{{ selectedFeature.get('street') }}</div>
           </template>
           <template v-if="selectedFeature.get('numbus')">
             <div class="info-label">Номера автобусов:</div>
@@ -19,10 +19,6 @@
           <template v-if="selectedFeature.get('numtaxi')">
             <div class="info-label">Номера маршрутных автобусов:</div>
             <div class="info-value">{{ selectedFeature.get('numtaxi') }}</div>
-          </template>
-          <template v-if="selectedFeature.get('street')">
-            <div class="info-label">Местоположение остановки:</div>
-            <div class="info-value">{{ selectedFeature.get('street') }}</div>
           </template>
           <template v-if="selectedFeature.get('financing')">
             <div class="info-label">Финансирование:</div>

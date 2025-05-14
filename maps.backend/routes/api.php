@@ -1,19 +1,18 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BusStopController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', [AuthController::class, 'me']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    
-   
-});
-
-Route::post('/sanctum/csrf-cookie', function () {
-    return response()->json(['message' => 'CSRF token']);
-});
-
 
 Route::post('/logout', [AuthController::class, 'logout']);
+// ->middleware('auth:sanctum');
+
+Route::post('/addbusstop', [BusStopController::class, 'store']);
+// ->middleware('auth:sanctum');
+
+Route::delete('/busstop/{id}', [BusStopController::class, 'destroy']);
+
+Route::put('/busstop/{id}', [BusStopController::class, 'update']);

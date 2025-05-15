@@ -66,10 +66,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf.dev:/etc/nginx/conf.d/nginx.conf  # Конфиг для разработки
+      - ./nginx/nginx.conf.dev:/etc/nginx/conf.d/default.conf  # Конфиг для разработки
       - ./nginx/ssl:/etc/ssl
-    command: >
-      sh -c "rm -f /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+    command: nginx -g 'daemon off;'
     depends_on:
       - frontend
       - backend

@@ -30,6 +30,7 @@
       :edit-fields="editFields"
       :temp-stop="tempStop"
       :icons="icons"
+      :contracts="contracts"
       @close-panel="closePanel"
       @submit-edit="submitEdit"
       @update-field="updateField"
@@ -37,6 +38,9 @@
       @submit-delete="submitDelete"
       @confirm-delete="confirmDelete"
       @cancel-delete="cancelDelete"
+      @upload-contract="handleUploadContract"
+      @download-contract="handleDownloadContract"
+      @delete-contract="handleDeleteContract"
     />
 
   </div>
@@ -115,6 +119,7 @@ export default defineComponent({
         { src: "/icons/busType4.svg", value: 4 },
         { src: "/icons/busType5.svg", value: 5 },
       ],
+      contracts: [],
     };
   },
   mounted() {
@@ -212,18 +217,6 @@ export default defineComponent({
         }
       }
 
-    },
-    prepareEditMode(feature) {
-      this.tempStop = {
-        name: feature.get('name') || '',
-        type: feature.get('type') || 1,
-        numbus: feature.get('numbus') || '',
-        numtaxi: feature.get('numtaxi') || '',
-        year: feature.get('year') || '',
-        financing: feature.get('financing') || '',
-        comments: feature.get('comments') || '',
-        coordinates: feature.getGeometry().getCoordinates()
-      };
     },
     updateField({field, value}) {
       this.selectedFeature.set(field, value);
@@ -348,7 +341,6 @@ export default defineComponent({
       this.addLayer.getSource().clear();
       this.resetTempData();
     },
-
     prepareEditMode(feature) {
       this.resetTempData();
       this.selectedFeature = feature;
@@ -364,6 +356,9 @@ export default defineComponent({
       };
       this.step = 1;
       this.isPanelVisible = true;
+      const fullId = feature.getId();
+      const id = fullId.split('.')[1];
+      this.fetchContracts(id);
     },
 
     getIcon(feature) {
@@ -397,22 +392,81 @@ export default defineComponent({
       comments: '',
       type: 1,
       coordinates: null,
-    };
-    this.errors = {
-      name: '',
-      street: '',
-    };
-    this.editFields = {
-      name: false,
-      street: false,
-      year: false,
-      financing: false,
-      numbus: false,
-      numtaxi: false,
-      comments: false,
-      type: false,
-    };
-    }
+      };
+      this.errors = {
+        name: '',
+        street: '',
+      };
+      this.editFields = {
+        name: false,
+        street: false,
+        year: false,
+        financing: false,
+        numbus: false,
+        numtaxi: false,
+        comments: false,
+        type: false,
+      };
+    },
+
+
+    // Работа с файлами
+    async fetchContracts(stopId) {
+      try {
+        const response = await http.get(`/stops/${stopId}/contracts`);
+        this.contracts = response.data;
+      } catch (e) {
+        console.error('Не удалось загрузить список договоров', e);
+      }
+    },
+
+    // загрузить файл
+    async handleUploadContract(file) {
+      const fullId = this.selectedFeature.getId();
+      const id = fullId.split('.')[1];
+      const formData = new FormData();
+      formData.append('contract', file);
+
+      try {
+        await http.post(`/stops/${id}/contracts`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        await this.fetchContracts(id);
+      } catch (e) {
+        console.error('Ошибка загрузки договора', e);
+      }
+    },
+
+    // скачать
+    handleDownloadContract(contractId) {
+      http({
+        url: `/contracts/${contractId}/download`,
+        method: 'GET',
+        responseType: 'blob'
+      }).then(res => {
+        const url = window.URL.createObjectURL(new Blob([res.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const contract = this.contracts.find(c => c.id === contractId);
+        link.setAttribute('download', contract.original_name);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }).catch(e => console.error(e));
+    },
+
+    // удалить
+    async handleDeleteContract(contractId) {
+      if (!confirm('Удалить файл?')) return;
+      try {
+        await http.delete(`/contracts/${contractId}`);
+        const fullId = this.selectedFeature.getId();
+        const id = fullId.split('.')[1];
+        await this.fetchContracts(id);
+      } catch (e) {
+        console.error('Ошибка удаления договора', e);
+      }
+    },
   },
 });
 </script>

@@ -25,4 +25,11 @@ class BusStop extends Model
     {
         $this->attributes['wkb_geometry'] = DB::raw("ST_SetSRID(ST_Point($longitude, $latitude), 4326)");
     }
+
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class, 'busstation_id', 'ogc_fid');
+    }
+
 }
+

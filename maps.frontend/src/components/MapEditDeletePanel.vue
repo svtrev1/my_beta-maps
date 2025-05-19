@@ -311,6 +311,45 @@
                 class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
                 Изменить данные остановки 
                 </button>
+
+
+
+                <!-- Блок работы с договорами -->
+                <div class="mt-6 border-t pt-4 space-y-4">
+                    <h3 class="text-lg font-semibold">Договоры</h3>
+
+                    <!-- 1) Загрузка нового файла -->
+                    <div class="flex items-center gap-2">
+                    <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        @change="onFileChange"
+                        class="w-2/3 p-2 border rounded-lg text-sm"
+                    />
+                    <button
+                        @click="uploadContract"
+                        :disabled="!selectedFile"
+                        class="w-1/3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded-lg disabled:opacity-50 text-sm"
+                    >
+                        Загрузить
+                    </button>
+                    </div>
+
+                    <!-- 2) Список уже загруженных -->
+                    <ul class="space-y-2">
+                    <li
+                        v-for="contract in contracts"
+                        :key="contract.id"
+                        class="flex justify-between items-center bg-gray-50 p-2 rounded-lg"
+                    >
+                        <span class="truncate">{{ contract.original_name }}</span>
+                        <div class="flex gap-2">
+                        <button @click="downloadContract(contract.id)" class="text-blue-500 hover:underline">Скачать</button>
+                        <button @click="deleteContract(contract.id)" class="text-red-500 hover:underline">Удалить</button>
+                        </div>
+                    </li>
+                    </ul>
+                </div>
             </div>
 
             
@@ -368,7 +407,16 @@
         selectedFeature: Object,
         editFields: Object,
         tempStop: Object,
-        icons: Array
+        icons: Array,
+        contracts: {
+            type: Array,
+            default: () => []
+        }
+    },
+    data() {
+        return {
+            selectedFile: null
+        }
     },
     mounted() {
         this.$nextTick(() => {
@@ -421,6 +469,19 @@
         },
         cancelDelete() {
             this.$emit('cancel-delete');
+        },
+        onFileChange(event) {
+            this.selectedFile = event.target.files[0] || null;
+        },
+        uploadContract() {
+            this.$emit('upload-contract', this.selectedFile);
+            this.selectedFile = null;
+        },
+        downloadContract(contractId) {
+            this.$emit('download-contract', contractId);
+        },
+        deleteContract(contractId) {
+            this.$emit('delete-contract', contractId);
         }
     }
   }

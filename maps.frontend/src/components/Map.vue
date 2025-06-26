@@ -1,5 +1,17 @@
 <template>
   <div id="map-container">
+    <div v-if="showLegend" id="map-legend">
+      <div class="legend-header">
+        <h3>Условные обозначения</h3>
+        <button class="close-legend" @click="showLegend = false">×</button>
+      </div>
+      <ul class="legend-list">
+        <li v-for="item in icons" :key="item.value">
+          <img :src="item.src" class="legend-icon">
+          <span class="legend-text">{{ item.text }}</span>
+        </li>
+      </ul>
+    </div>
     <div id="map" style="height: 100%; width: 100%"></div>
     
     <MapInfoPanel 
@@ -82,6 +94,7 @@ export default defineComponent({
   },
   data() {
     return {
+      showLegend: true,
       isPanelVisible: false,
       selectedFeature: null,
       addLayer: null,
@@ -113,11 +126,11 @@ export default defineComponent({
         street: '',
       },
       icons: [
-        { src: "/icons/busTrue.svg", value: 1 },
-        { src: "/icons/busFalse.svg", value: 2 },
-        { src: "/icons/busType3.svg", value: 3 },
-        { src: "/icons/busType4.svg", value: 4 },
-        { src: "/icons/busType5.svg", value: 5 },
+        { src: "/icons/busTrue.svg", value: 1, text: "Установлен павильон" },
+        { src: "/icons/busFalse.svg", value: 2, text: "Не установлен павильон" },
+        { src: "/icons/busType3.svg", value: 3, text: "Установлен павильон предпринимателем" },
+        { src: "/icons/busType4.svg", value: 4, text: "Установлен теплый павильон" },
+        { src: "/icons/busType5.svg", value: 5, text: "Установлен навес" },
       ],
       contracts: [],
     };
@@ -492,18 +505,29 @@ export default defineComponent({
 #info-panel {
   position: absolute;
   top: 0;
-  left: -500px;
-  width: 500px;
+  left: -100%;
+  width: 100%;
+  max-width: 500px;
   height: 100%;
   background: white;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   transition: left 0.3s ease-in-out;
   z-index: 100;
   color: black;
+  overflow-y: auto;
 }
 
 #info-panel.visible {
   left: 0;
+}
+
+@media (min-width: 501px) {
+  #info-panel {
+    left: -500px;
+  }
+  #info-panel.visible {
+    left: 0;
+  }
 }
 
 .info-content {
@@ -578,4 +602,81 @@ export default defineComponent({
   perspective: 1000px;
 }
 
+#map-legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.7); 
+  border-radius: 8px;
+  padding: 15px;
+  z-index: 1000; 
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  max-width: 300px;
+}
+
+.legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.legend-header h3 {
+  color: #4D84BC;
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  flex-grow: 1;
+  text-align: center;
+}
+
+.close-legend {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s;
+}
+
+.close-legend:hover {
+  color: #333;
+}
+
+.legend-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.legend-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.legend-text {
+  font-size: 14px;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  #map-legend {
+    display: none;
+  }
+}
 </style>
+

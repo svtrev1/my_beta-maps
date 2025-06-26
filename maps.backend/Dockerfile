@@ -9,7 +9,9 @@ RUN apt-get update \
       libfreetype6-dev \
       libxml2-dev \
       libpq-dev \
+      libzip-dev \
       zip \
+      unzip \
       git \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
  && docker-php-ext-install \

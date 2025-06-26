@@ -324,12 +324,12 @@
                         type="file"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                         @change="onFileChange"
-                        class="w-2/3 p-2 border rounded-lg text-sm"
+                        class="flex-1 p-2 border rounded-lg"
                     />
                     <button
                         @click="uploadContract"
                         :disabled="!selectedFile"
-                        class="w-1/3 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded-lg disabled:opacity-50 text-sm"
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
                     >
                         Загрузить
                     </button>

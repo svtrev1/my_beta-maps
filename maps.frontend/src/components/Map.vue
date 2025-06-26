@@ -154,7 +154,6 @@ export default defineComponent({
           zoom: 12,
         }),
       });
-
       
       const selectedType = ref(1);
 
@@ -167,12 +166,7 @@ export default defineComponent({
       const vectorLayer = new VectorLayer({
         source: vectorSource,
         style: (feature) => {
-          return new Style({
-            image: new Icon({
-              src: this.getIcon(feature),
-              scale: 0.05,
-            }),
-          });
+          return this.getStyle(feature);
         },
       });
 
@@ -205,36 +199,33 @@ export default defineComponent({
       });
 
       if (feature) {
+        const oldSelected = this.selectedFeature;
+        this.selectedFeature = feature;
         if (this.mode === 'default' && !this.isAuthenticated) {
-          this.selectedFeature = feature;
           this.isPanelVisible = true;
-        }
-        else if (this.isAuthenticated) {
-          this.selectedFeature = feature;
+        } else if (this.isAuthenticated) {
           this.modeStore.setMode('edit');
           this.prepareEditMode(feature);
           this.isPanelVisible = true;
         }
+
+        if (oldSelected && oldSelected !== feature) {
+          this.updateFeatureStyle(oldSelected);
+        }
+        this.updateFeatureStyle(feature);
       }
 
     },
+
+    updateFeatureStyle(feature) {
+      const style = this.getStyle(feature);
+      feature.setStyle(style);
+    },
+
     updateField({field, value}) {
       this.selectedFeature.set(field, value);
       this.tempStop[field] = value;
-
-      // if (field === 'name') {
-      //   this.validateName(value);
-      // }
     },
-
-    // submitEdit() {
-    //   console.log("Редактирование остановки:", this.selectedFeature.get('name'));
-
-    //   console.log("Обновленная информация:", this.tempStop);
-
-    //   this.step = 4;
-    //   this.resetTempData();
-    // },
 
     async submitEdit() {
       try {
@@ -361,6 +352,20 @@ export default defineComponent({
       this.fetchContracts(id);
     },
 
+    getStyle(feature) {
+      const isSelected = this.selectedFeature && this.selectedFeature.getId() === feature.getId();
+      const baseScale = 0.05;
+      const selectedScale = 0.07;
+
+      return new Style({
+        image: new Icon( {
+          src: this.getIcon(feature),
+          scale: isSelected ? selectedScale : baseScale,
+          opacity: isSelected ? 1 : 0.8,
+        }),
+      });
+    },
+
     getIcon(feature) {
       const type = feature.get('type');
       switch (type) {
@@ -373,11 +378,15 @@ export default defineComponent({
     },
 
     closePanel() {
+      if (this.selectedFeature) {
+        const oldSelected = this.selectedFeature;
+        this.selectedFeature = null;
+        this.updateFeatureStyle(oldSelected);
+      }
       this.isPanelVisible = false;
       this.modeStore.setMode('default'); 
       this.step = 1;
       this.addLayer.getSource().clear();
-      this.selectedFeature = null;
       this.resetTempData();
     },
 
@@ -475,8 +484,8 @@ export default defineComponent({
 #map-container {
   position: relative;
   width: 100vw;
-  height: 100%; /* Убираем лишний отступ снизу */
-  margin-top: 40px;  /* Учитываем высоту хедера */
+  height: 100%; 
+  margin-top: 40px;  
   z-index: 5;
 }
 
@@ -559,4 +568,14 @@ export default defineComponent({
   text-align: left;
   word-break: break-word;
 }
+
+::v-deep .ol-viewport .ol-overlaycontainer-stopevent {
+  transition: all 0.3s ease;
+}
+
+::v-deep .ol-viewport {
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
 </style>

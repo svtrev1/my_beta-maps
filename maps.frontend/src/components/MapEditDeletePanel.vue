@@ -319,17 +319,17 @@
                     <h3 class="text-lg font-semibold">Договоры</h3>
 
                     <!-- 1) Загрузка нового файла -->
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 w-full">
                     <input
                         type="file"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                         @change="onFileChange"
-                        class="flex-1 p-2 border rounded-lg"
+                        class="flex-1 min-w-0 truncate p-2 border rounded-lg"
                     />
                     <button
                         @click="uploadContract"
                         :disabled="!selectedFile"
-                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 whitespace-nowrap flex-shrink-0"
                     >
                         Загрузить
                     </button>

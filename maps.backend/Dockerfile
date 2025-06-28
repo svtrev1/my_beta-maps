@@ -39,9 +39,12 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
 
 WORKDIR /var/www/html
 
-# Копируем код и ставим зависимости
+# Копируем только файлы зависимостей
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+
+# Копируем весь остальной код после установки зависимостей
 COPY . .
-RUN composer install --optimize-autoloader --no-dev
 
 # Правильные права
 RUN chown -R www-data:www-data /var/www/html \
